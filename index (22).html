@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Đua cờ cá ngựa – Unit 6-7-8</title>
+<style>
+:root{color-scheme:dark;--u:10px;--ink:#2b1a4d;--pink:#e0287a;--gold:#ffc233;--vio:#7a3fb0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(ellipse at center,#2f4a8a,#14224a);color:#fff8ee;font-family:"Baloo 2","Nunito","Segoe UI",system-ui,sans-serif;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#wrap{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;overflow:hidden;border-radius:14px}
+canvas#c{position:absolute;top:0;left:50%;transform:translateX(-50%);height:100%;width:auto;display:block;touch-action:none}
+#ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(20,15,50,.6)}
+#ov.off{display:none}
+.card{background:#fff8ee;color:var(--ink);border-radius:calc(var(--u)*2);padding:calc(var(--u)*1.2) calc(var(--u)*3);width:94%;max-height:95%;overflow:auto;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*.8);text-align:center}
+.sec{align-self:stretch;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:calc(var(--u)*2);color:var(--vio)}
+h1{margin:0;font-size:calc(var(--u)*5);color:var(--pink);line-height:1.1}
+.ttl{font-size:calc(var(--u)*3.8);font-weight:800;line-height:1.15}
+.ttl.q{font-size:calc(var(--u)*3.2)}
+.sub{font-size:calc(var(--u)*2.3);font-weight:700;color:#5b4a7a}
+.tk{font-size:calc(var(--u)*7);font-weight:800;line-height:1.1}
+.pic{width:calc(var(--u)*13);height:calc(var(--u)*13);border-radius:50%;background:#fff;box-shadow:0 0 0 calc(var(--u)*.6) #e8dcf7;display:flex;align-items:center;justify-content:center;font-size:calc(var(--u)*8);line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;flex:none}
+.pic.s{width:calc(var(--u)*7);height:calc(var(--u)*7);font-size:calc(var(--u)*4.4)}
+.passage{background:#fff;border:4px solid #e8dcf7;border-radius:calc(var(--u)*1.6);padding:calc(var(--u)*1.2) calc(var(--u)*2);font-size:calc(var(--u)*2.7);line-height:1.45;font-weight:700;text-align:left}
+.opts{display:flex;gap:calc(var(--u)*1.6);justify-content:center;flex-wrap:wrap}
+.opt,.go{font:inherit;cursor:pointer;border:4px solid #d9cdee;background:#fff;border-radius:calc(var(--u)*1.8);color:var(--ink)}
+.opt{font-size:calc(var(--u)*3.2);font-weight:800;padding:calc(var(--u)*1) calc(var(--u)*2.4);min-width:calc(var(--u)*16)}
+.opt:hover{background:#fff1f7}.opt.ok{border-color:#2a9d4a;background:#d9f5e1}.opt.no{border-color:#d62839;background:#fde0e3}.opt:disabled{cursor:default}
+.go{background:var(--gold);border-color:var(--gold);font-size:calc(var(--u)*3.2);font-weight:800;padding:calc(var(--u)*1.1) calc(var(--u)*3.2)}
+.go.alt{background:#fff;border-color:#d9cdee}
+.bot{display:flex;align-items:center;justify-content:center;gap:calc(var(--u)*3);min-height:calc(var(--u)*6)}
+.fb{font-size:calc(var(--u)*3);font-weight:800}.fb.ok{color:#1e8e3e}.fb.no{color:#d62839}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas><div id="ov"></div></div>
+<script>
+const W=540,H=540,CS=35.5,BX=3.75,BY=3.75,cv=document.getElementById('c'),g=cv.getContext('2d'),ov=document.getElementById('ov'),wrap=document.getElementById('wrap');
+cv.width=W;cv.height=H;
+const fit=()=>document.documentElement.style.setProperty('--u',(wrap.clientWidth/100)+'px');fit();addEventListener('resize',fit);
+const FONT="'Baloo 2','Nunito','Segoe UI',system-ui,'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif";
+const rnd=n=>Math.floor(Math.random()*n),shuf=a=>a.slice().sort(()=>Math.random()-.5);
+const SPD=location.hash=='#fast'?.04:1;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms*SPD));
+const tween=(ms,fn)=>new Promise(res=>{const d=ms*SPD,t0=performance.now();const f=now=>{const t=d<=0?1:Math.min(1,(now-t0)/d);fn(t);t<1?requestAnimationFrame(f):res()};requestAnimationFrame(f)});
+let S={wins:0,games:0};try{Object.assign(S,JSON.parse(localStorage.getItem('ludo_b13')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('ludo_b13',JSON.stringify(S))}catch(e){}};
+
+/* ============ KIẾN THỨC (theo ảnh Unit 6 – 7 – 8) ============ */
+const items=[
+ {w:'classroom',e:'🏫',u:6},{w:'playground',e:'🎠',u:6},{w:'garden',e:'🌻',u:6},{w:'computer room',e:'💻',u:6},{w:'library',e:'📚',u:6},{w:'building',e:'🏢',u:6},{w:'school gate',e:'🚪',u:6},
+ {w:'once a week',e:'1️⃣',u:7},{w:'twice a week',e:'2️⃣',u:7},{w:'three times a week',e:'3️⃣',u:7},{w:'every Monday',e:'📅',u:7},
+ {w:'teacher',e:'👩‍🏫',u:8},{w:'painter',e:'🖌️',u:8,g:'pa'},{w:'singer',e:'🎤',u:8},{w:'doctor',e:'👩‍⚕️',u:8},{w:'scientist',e:'👩‍🔬',u:8},{w:'artist',e:'👩‍🎨',u:8,g:'pa'}];
+const fills=[
+ {s:'How many ___ are there at your school?',e:'🏫',a:'classrooms',o:['classrooms','classroom','a classroom']},
+ {s:'How many ___ are there at your school?',e:'🎠',a:'playgrounds',o:['playgrounds','playground','a playground']},
+ {s:'How many libraries are there at your school? – ___ is one.',e:'📚',a:'There',o:['There','They','It']},
+ {s:'There ___ two gardens at my school.',e:'🌻',a:'are',o:['are','is','am']},
+ {s:'There ___ one computer room at my school.',e:'💻',a:'is',o:['is','are','be']},
+ {s:'There is one school ___.',e:'🚪',a:'gate',o:['gate','gates','a gate']},
+ {s:'There are three ___ at my school.',e:'🏢',a:'buildings',o:['buildings','building','a building']},
+ {s:'When do you have English? – I have it ___ Monday.',e:'📅',a:'on',o:['on','in','at']},
+ {s:'Do you have music on Tuesday? – Yes, I ___.',e:'🎵',a:'do',o:['do','have','am']},
+ {s:'Do you have art on Friday? – No, I ___.',e:'🎨',a:'don’t',o:['don’t','can’t','isn’t']},
+ {s:'How ___ do you have English?',e:'📅',a:'often',o:['often','many','old']},
+ {s:'I have English ___ a week.',e:'1️⃣',a:'once',o:['once','one','first']},
+ {s:'I have music ___ a week.',e:'2️⃣',a:'twice',o:['twice','two','second']},
+ {s:'I have art three ___ a week.',e:'3️⃣',a:'times',o:['times','time','day']},
+ {s:'I have English every ___.',e:'📅',a:'Monday',o:['Monday','Mondays','on Monday']},
+ {s:'What do you ___ to be in the future?',e:'🌟',a:'want',o:['want','wants','like']},
+ {s:'I want to be ___ doctor.',e:'👩‍⚕️',a:'a',o:['a','an','the']},
+ {s:'I want to be ___ artist.',e:'👩‍🎨',a:'an',o:['an','a','the']},
+ {s:'I like it because I ___ to be a singer.',e:'🎤',a:'want',o:['want','wants','wanting']},
+ {s:'Why do you like science? – I like it because I want to be a ___.',e:'👩‍🔬',a:'scientist',o:['scientist','science','scientists']}];
+const sortQ=['There are two gardens at my school.','How many libraries are there at your school?','There is one computer room.','When do you have English?','I have it on Monday.',
+ 'How often do you have music?','I have music twice a week.','What do you want to be in the future?','I want to be a doctor.','I like it because I want to be a singer.'];
+const passages=[
+ {t:'Hello! I’m Lan. There are ten classrooms at my school. There is one library and one computer room. There are two gardens, too.',qs:[
+  {q:'How many gardens are there at Lan’s school?',o:['Two','One','Ten'],a:'Two'},{q:'How many classrooms are there at Lan’s school?',o:['Ten','Two','One'],a:'Ten'}]},
+ {t:'Hi! I’m Tom. I have English twice a week. I have it on Monday and Thursday. I have music once a week.',qs:[
+  {q:'How often does Tom have English?',o:['Twice a week','Once a week','Three times a week'],a:'Twice a week'},{q:'How often does Tom have music?',o:['Once a week','Twice a week','Three times a week'],a:'Once a week'}]},
+ {t:'I’m Mai. I like painting. I like it because I want to be a painter in the future.',qs:[
+  {q:'What does Mai want to be in the future?',o:['A painter','A singer','A doctor'],a:'A painter'},{q:'Why does Mai like painting?',o:['She wants to be a painter.','She wants to be a doctor.','She wants to be a singer.'],a:'She wants to be a painter.'}]},
+ {t:'My name’s Ben. I want to be a doctor. There is one library and one garden at my school. I go to the library every Monday.',qs:[
+  {q:'What does Ben want to be?',o:['A doctor','A teacher','A singer'],a:'A doctor'},{q:'When does Ben go to the library?',o:['Every Monday','Every Tuesday','Twice a week'],a:'Every Monday'}]},
+ {t:'I’m Hoa. I want to be a singer. I have music three times a week. I have it on Monday, Wednesday and Friday.',qs:[
+  {q:'What does Hoa want to be?',o:['A singer','A scientist','An artist'],a:'A singer'},{q:'How often does Hoa have music?',o:['Three times a week','Twice a week','Once a week'],a:'Three times a week'}]},
+ {t:'There is one school gate and one playground at my school. There is a big building, too. There are four classrooms in the building.',qs:[
+  {q:'How many classrooms are there in the building?',o:['Four','One','Two'],a:'Four'},{q:'How many school gates are there?',o:['One','Four','Two'],a:'One'}]}];
+const decks={};const pull=(k,a)=>{if(!decks[k]||!decks[k].length)decks[k]=shuf(a);return decks[k].pop()};
+function qA(){const it=pull('A',items),pool=items.filter(x=>x.u==it.u&&x!==it&&!(it.g&&x.g==it.g));const o=shuf([it,...shuf(pool).slice(0,2)]);
+ return{sec:'Look at the picture and choose the correct option',kind:'choice',big:it.e,sub:'Chọn đáp án đúng',o:o.map(x=>({h:x.w,ok:x===it})),ans:it.w}}
+function qB(){const f=pull('B',fills);return{sec:'Read and choose the correct answer',kind:'choice',big:f.e,title:f.s,o:shuf(f.o).map(x=>({h:x,ok:x==f.a})),ans:f.a}}
+function qC(){const s=pull('C',sortQ);return{sec:'Put the words into the correct order',kind:'sort',big:'🔤',small:1,sub:'Chạm vào các từ theo đúng thứ tự',ans:s}}
+function qD(){const p=pull('D',passages),q=p.qs[rnd(p.qs.length)];return{sec:'Read the passage and choose the correct option',kind:'choice',passage:p.t,title:q.q,o:shuf(q.o).map(x=>({h:x,ok:x==q.a})),ans:q.a}}
+function newQuestion(){const r=Math.random();return r<.3?qA():r<.6?qB():r<.8?qC():qD()}
+
+/* ============ GIAO DIỆN CÂU HỎI ============ */
+let asked=0,right=0;
+function show(h){ov.innerHTML=h;ov.className=''}function hide(){ov.className='off'}
+function askQuestion(q){return new Promise(resolve=>{let done=0;
+ show(`<div class="card"><div class="sec"><span>🎲 Trả lời đúng để được tung xúc xắc · ${q.sec}</span></div>${q.passage?`<div class="passage">${q.passage}</div>`:''}${q.big?`<div class="pic${q.small?' s':''}">${q.big}</div>`:''}${q.title?`<div class="ttl${q.title.length>38?' q':''}">${q.title}</div>`:''}<div class="sub">${q.sub||''}</div><div id="body" class="opts"></div><div class="bot"><div class="fb" id="fb"></div><div id="nx"></div></div></div>`);
+ const body=document.getElementById('body'),fb=document.getElementById('fb'),nx=document.getElementById('nx');
+ const mk=(t,c,f)=>{const b=document.createElement('button');b.className=c;b.textContent=t;b.onclick=f;return b};
+ const end=(ok,correct)=>{done=1;asked++;if(ok)right++;fb.className='fb '+(ok?'ok':'no');fb.textContent=ok?'✅ Đúng rồi!':'❌ Đáp án đúng: '+correct;nx.append(mk(ok?'🎲 Tung xúc xắc':'Mất lượt ▶','go',()=>resolve(ok)))};
+ if(q.kind=='choice'){q.o.forEach(o=>{const b=mk(o.h,'opt',()=>{if(done)return;[...body.children].forEach((x,i)=>{x.disabled=true;if(q.o[i].ok)x.classList.add('ok')});if(!o.ok)b.classList.add('no');end(o.ok,q.ans)});body.append(b)})}
+ else{const ws=q.ans.split(' '),pool=shuf(ws.map((w,i)=>({w,i})));let pk=[];const line=document.createElement('div'),chips=document.createElement('div');line.className=chips.className='opts';line.style.minHeight='calc(var(--u)*7)';body.style.flexDirection='column';body.append(line,chips);
+  const rs=()=>{line.innerHTML='';chips.innerHTML='';pk.forEach(x=>{const b=mk(x.w,'opt ok',()=>{if(!done){pk=pk.filter(y=>y!==x);rs()}});b.style.minWidth='0';line.append(b)});
+   pool.filter(x=>!pk.includes(x)).forEach(x=>{const b=mk(x.w,'opt',()=>{if(done)return;pk.push(x);rs();if(pk.length==ws.length){[...line.children,...chips.children].forEach(c=>c.disabled=true);end(pk.map(y=>y.w).join(' ')==q.ans,q.ans)}});b.style.minWidth='0';chips.append(b)})};rs()}})}
+
+/* ============ BÀN CỜ ============ */
+const LOOP=[];const seg=(c,r,dc,dr,n)=>{for(let i=0;i<n;i++)LOOP.push([c+dc*i,r+dr*i])};
+seg(1,6,1,0,5);seg(6,5,0,-1,6);seg(7,0,1,0,2);seg(8,1,0,1,5);seg(9,6,1,0,6);seg(14,7,0,1,2);seg(13,8,-1,0,5);seg(8,9,0,1,6);seg(7,14,-1,0,2);seg(6,13,0,-1,5);seg(5,8,-1,0,6);seg(0,7,0,-1,2);
+const PL=[{name:'Bạn',av:'🙂',col:'#e63946',light:'#ffd6d9',start:0,dir:[1,0],entry:[0,7],yard:[0,0]},
+ {name:'Bot Mai',av:'🤖',col:'#2a9d4a',light:'#d3f2dc',start:13,dir:[0,1],entry:[7,0],yard:[9,0]},
+ {name:'Bot Nam',av:'🤖',col:'#e0a400',light:'#fff1b8',start:26,dir:[-1,0],entry:[14,7],yard:[9,9]},
+ {name:'Bot Lan',av:'🤖',col:'#2f7dff',light:'#d4e4ff',start:39,dir:[0,-1],entry:[7,14],yard:[0,9]}];
+/* quân ngựa vẽ bằng SVG, mỗi người một màu */
+const shade=(hex,k)=>{const n=parseInt(hex.slice(1),16);return`rgb(${Math.round((n>>16)*k)},${Math.round(((n>>8)&255)*k)},${Math.round((n&255)*k)})`};
+function horseSVG(col){const d=shade(col,.62);return `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'>
+<path d='M50,24 L57,4 L66,24 Z' fill='${col}' stroke='#fff' stroke-width='3' stroke-linejoin='round'/>
+<path d='M26,100 C23,84 27,66 37,52 C31,44 31,34 39,26 L37,8 L50,20 C60,15 73,19 81,32 C87,38 93,46 93,54 C93,62 85,67 77,65 C71,64 65,65 61,71 C67,81 71,90 73,100 Z' fill='${col}' stroke='#fff' stroke-width='3' stroke-linejoin='round'/>
+<ellipse cx='80' cy='55' rx='12' ry='9' fill='#fff' opacity='.3'/>
+<path d='M40,26 C27,34 22,50 29,60 C20,66 18,82 24,98 C33,84 38,74 46,66 C39,58 37,44 46,34 Z' fill='#5a3a22' stroke='#2b1a4d' stroke-width='2.5' stroke-linejoin='round'/>
+<path d='M52,21 C60,12 70,18 67,28 C62,23 57,24 52,29 Z' fill='#5a3a22' stroke='#2b1a4d' stroke-width='2' stroke-linejoin='round'/>
+<circle cx='71' cy='38' r='5.5' fill='#2b1a4d'/><circle cx='73' cy='36' r='1.9' fill='#fff'/>
+<ellipse cx='88' cy='54' rx='2.4' ry='3.4' fill='${d}'/>
+<path d='M79,64 Q85,63 88,59' stroke='${d}' stroke-width='2.2' fill='none' stroke-linecap='round'/>
+<circle cx='62' cy='50' r='5' fill='#ff8fa3' opacity='.55'/>
+<ellipse cx='50' cy='107' rx='37' ry='11' fill='${d}'/>
+<ellipse cx='50' cy='101' rx='37' ry='11' fill='${col}' stroke='#fff' stroke-width='3'/>
+<ellipse cx='40' cy='97.5' rx='17' ry='3.5' fill='#fff' opacity='.4'/></svg>`}
+PL.forEach(P=>{P.img=new Image();P.img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(horseSVG(P.col))});
+const STAR=new Set([8,21,34,47]),START=new Set([0,13,26,39]),BOOST=new Set([3,10,16,23,29,36,42,49]);
+const GOAL=56;
+const cellGrid=(o,pos)=>{const P=PL[o];if(pos<=50)return LOOP[(P.start+pos)%52];const k=pos-50;return[P.entry[0]+P.dir[0]*k,P.entry[1]+P.dir[1]*k]};
+const absIdx=(o,pos)=>(PL[o].start+pos)%52;
+let N=2,pawns=[],turn=0,over=false,status='',fx=[],hiL=[],pickRes=null,tt=0;
+const dice={val:1,rot:0,bounce:0};
+function initGame(n){N=n;pawns=[];for(let o=0;o<4;o++)for(let i=0;i<N;i++)pawns.push({o,id:i,pos:0,vx:null,vy:null,hop:0,ht:0,face:LOOP[PL[o].start][0]<7?1:-1,sqT:0});turn=0;over=false;fx=[];hiL=[];status='';dice.val=1}
+const pop=(gx,gy,text,color)=>fx.push({x:BX+(gx+.5)*CS,y:BY+(gy+.5)*CS,text,color:color||'#fff',t0:performance.now(),dur:1100*Math.max(SPD,.2)});
+
+/* ============ LUẬT CHƠI ============ */
+const legal=(o,r)=>{const seen=new Set(),out=[];pawns.filter(p=>p.o==o&&p.pos<GOAL&&p.pos+r<=GOAL).forEach(p=>{if(!seen.has(p.pos)){seen.add(p.pos);out.push(p)}});return out};
+const victims=(o,pos)=>{if(pos>50)return[];const a=absIdx(o,pos);if(STAR.has(a)||START.has(a))return[];return pawns.filter(p=>p.o!=o&&p.pos<=50&&absIdx(p.o,p.pos)==a)};
+function score(p,r){let np=p.pos+r,s=np*.2;if(np<=50&&BOOST.has(absIdx(p.o,np))&&np+3<=GOAL){np+=3;s+=30}
+ if(victims(p.o,np).length)s+=100;if(np==GOAL)s+=80;if(np<=50&&STAR.has(absIdx(p.o,np)))s+=8;return s+Math.random()}
+async function hop(p,to){const a=cellGrid(p.o,p.pos),b=cellGrid(p.o,to);if(b[0]!=a[0])p.face=b[0]>a[0]?1:-1;
+ await tween(170,t=>{p.vx=a[0]+(b[0]-a[0])*t;p.vy=a[1]+(b[1]-a[1])*t;p.hop=Math.sin(Math.PI*t)*13;p.ht=t});p.pos=to;p.vx=null;p.hop=0;p.ht=0;p.sqT=performance.now()}
+async function moveBy(p,n){for(let i=0;i<n;i++)await hop(p,p.pos+1)}
+async function fly(v){const a=cellGrid(v.o,v.pos),b=cellGrid(v.o,0);await tween(550,t=>{v.vx=a[0]+(b[0]-a[0])*t;v.vy=a[1]+(b[1]-a[1])*t;v.hop=Math.sin(Math.PI*t)*46;v.ht=t*3});v.pos=0;v.vx=null;v.hop=0;v.ht=0;v.sqT=performance.now()}
+async function rollDice(r){let last=-1;
+ await tween(1250,t=>{const k=Math.floor(t*18);if(k!=last){last=k;dice.val=1+rnd(6)}dice.rot=(1-t)*(1-t)*Math.PI*9;dice.bounce=Math.abs(Math.sin(t*Math.PI*4.5))*(1-t)*44});
+ dice.val=r;dice.rot=0;dice.bounce=0;await tween(250,t=>{dice.bounce=Math.sin(t*Math.PI)*8})}
+function pickPawn(list){return new Promise(res=>{hiL=list;pickRes=res})}
+async function doMove(o,r){const lg=legal(o,r);
+ if(!lg.length){status='Không đi được 😅';await sleep(900);return}
+ let p;if(o==0&&lg.length>1){status='👆 Chọn ngựa!';p=await pickPawn(lg);hiL=[];pickRes=null}
+ else{p=o==0?lg[0]:lg.map(x=>({x,s:score(x,r)})).sort((a,b)=>b.s-a.s)[0].x;await sleep(500)}
+ status='';await moveBy(p,r);
+ if(p.pos<=50&&BOOST.has(absIdx(o,p.pos))&&p.pos+3<=GOAL){const c=cellGrid(o,p.pos);pop(c[0],c[1]-.6,'⚡ +3','#ffe066');await sleep(400);await moveBy(p,3)}
+ const vs=victims(o,p.pos);if(vs.length){const c=cellGrid(o,p.pos);pop(c[0],c[1]-.6,'💥','#ff8fa3');await Promise.all(vs.map(fly))}
+ if(p.pos==GOAL){const c=cellGrid(o,p.pos);pop(c[0],c[1]-.6,'🏁','#9df5b0');await sleep(600)}
+ return pawns.filter(x=>x.o==o).every(x=>x.pos==GOAL)}
+async function permission(o){
+ if(o==0){status='';const ok=await askQuestion(newQuestion());hide();if(!ok){status='Mất lượt 😢';await sleep(800);status=''}return ok}
+ status='🤖 đang nghĩ...';await sleep(900);const ok=Math.random()<.75;status=ok?'Đúng ✅':'Sai ❌';await sleep(600);status=ok?'':'Mất lượt';if(!ok)await sleep(500);return ok}
+async function play(){let extra=0;
+ while(!over){const o=turn;status='';
+  if(await permission(o)){const r=1+rnd(6);status='';await rollDice(r);
+   if(await doMove(o,r)){return endGame(o)}
+   if(r==6&&extra<2){extra++;status='Thêm lượt! 🎲';await sleep(600);continue}}
+  extra=0;turn=(turn+1)%4}}
+function endGame(w){over=true;S.games++;if(w==0)S.wins++;save();status='';
+ show(`<div class="card"><h1>${w==0?'🏆 Bạn thắng!':'🏁 '+PL[w].name+' về nhất!'}</h1><div class="tk">${w==0?'🎉🐴🎉':'🐴'}</div><div class="ttl">Bạn trả lời đúng ${right}/${asked} câu</div>
+ <div class="opts"><button class="go" id="a">🔁 Chơi lại</button><button class="go alt" id="m">Menu</button></div></div>`);
+ document.getElementById('a').onclick=()=>start(N);document.getElementById('m').onclick=menu}
+function menu(){over=true;initGame(2);
+ show(`<div class="card"><h1>🐴 Đua cờ cá ngựa</h1><div class="tk">🎲</div><div class="opts"><button class="go" id="s1">1 ngựa</button><button class="go" id="s2">2 ngựa</button></div></div>`);
+ document.getElementById('s1').onclick=()=>start(1);document.getElementById('s2').onclick=()=>start(2)}
+function start(n){initGame(n);asked=0;right=0;hide();play()}
+
+/* ============ VẼ ============ */
+function rr(x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function txt(s,x,y,sz,al='center',c='#fff'){g.font=`800 ${sz}px ${FONT}`;g.textAlign=al;g.textBaseline='middle';g.fillStyle=c;g.fillText(s,x,y)}
+function fitTxt(s,x,y,maxW,sz,al,c){g.font=`800 ${sz}px ${FONT}`;while(g.measureText(s).width>maxW&&sz>9){sz--;g.font=`800 ${sz}px ${FONT}`}txt(s,x,y,sz,al,c)}
+const px=c=>BX+c*CS,py=r=>BY+r*CS;
+function sprite(o,x,y,w,alpha){const im=PL[o].img;if(!im.complete||!im.naturalWidth)return;const h=w*1.2;g.globalAlpha=alpha==null?1:alpha;g.drawImage(im,x-w/2,y-h*.93,w,h);g.globalAlpha=1}
+function drawBoard(){
+ g.fillStyle='#fff8ee';rr(BX-3,BY-3,15*CS+6,15*CS+6,16);g.fill();
+ PL.forEach((P,i)=>{const[c,r]=P.yard,x=px(c)+3,y=py(r)+3,w=6*CS-6,cx=x+w/2,act=!over&&turn==i;
+  g.save();if(act){g.shadowColor=P.col;g.shadowBlur=18+Math.sin(tt*5)*6}
+  g.fillStyle=P.light;rr(x,y,w,w,16);g.fill();g.lineWidth=act?6:3;g.strokeStyle=P.col;g.stroke();g.restore();
+  const bob=act?Math.abs(Math.sin(tt*4))*4:0;txt(P.av,cx-44,y+30-bob,32,'center','#000');fitTxt(P.name,cx-24,y+31,90,19,'left',P.col);
+  const dn=pawns.filter(p=>p.o==i);const gap=26,x0=cx-(dn.length-1)*gap/2;dn.forEach((p,k)=>sprite(i,x0+k*gap,y+84,22,p.pos==GOAL?1:.28));
+  if(act){drawDice(cx,y+w*.66,62,P.col);if(status){g.fillStyle='rgba(255,255,255,.92)';g.font=`800 15px ${FONT}`;const tw=Math.min(w-14,g.measureText(status).width+22);rr(cx-tw/2,y+w-30,tw,24,12);g.fill();fitTxt(status,cx,y+w-18,w-26,15,'center','#2b1a4d')}}
+  else sprite(i,cx,y+w*.78,70,.16)});
+ const cell=(c,r,fill)=>{g.fillStyle=fill;rr(px(c)+1.5,py(r)+1.5,CS-3,CS-3,6);g.fill();g.lineWidth=1.5;g.strokeStyle='#cbbfa8';g.stroke()};
+ LOOP.forEach(([c,r],i)=>cell(c,r,START.has(i)?PL[i/13].col:BOOST.has(i)?'#ffe08a':'#fff'));
+ PL.forEach(P=>{for(let k=1;k<=5;k++)cell(P.entry[0]+P.dir[0]*k,P.entry[1]+P.dir[1]*k,P.col+'cc')});
+ const mx=px(7.5),my=py(7.5);[[6,6,6,9,0],[6,6,9,6,1],[9,6,9,9,2],[6,9,9,9,3]].forEach(([a,b,c,d,i])=>{g.fillStyle=PL[i].col;g.beginPath();g.moveTo(px(a),py(b));g.lineTo(px(c),py(d));g.lineTo(mx,my);g.closePath();g.fill()});
+ LOOP.forEach(([c,r],i)=>{if(STAR.has(i))txt('⭐',px(c+.5),py(r+.55),21,'center','#000');else if(BOOST.has(i))txt('⚡',px(c+.5),py(r+.55),21,'center','#000');else if(START.has(i))txt('▶',px(c+.5),py(r+.5),14,'center','#fff')})}
+function drawPawns(){const now=performance.now(),gr={};pawns.forEach(p=>{if(p.vx!=null)return;const k=cellGrid(p.o,p.pos).join(',');(gr[k]=gr[k]||[]).push(p)});
+ const list=pawns.map(p=>{const c=p.vx!=null?[p.vx,p.vy]:cellGrid(p.o,p.pos);let x=px(c[0]+.5),y=py(c[1]+.5)+13,sc=1;
+  if(p.vx==null){const a=gr[c.join(',')];if(a.length>1){x+=(a.indexOf(p)-(a.length-1)/2)*15;sc=.82}}p.px=x;p.py=y;return{p,x,y,sc}}).sort((a,b)=>a.y-b.y);
+ list.forEach(({p,x,y,sc})=>{const sel=hiL.includes(p),moving=p.vx!=null,done=p.pos==GOAL;
+  let lift=p.hop,rot=0,sx=1,sy=1;
+  if(moving){rot=p.face*Math.sin(Math.PI*p.ht)*.28;sy=1+Math.sin(Math.PI*p.ht)*.1;sx=1-Math.sin(Math.PI*p.ht)*.06}
+  else{const q=Math.max(0,1-(now-p.sqT)/230);sy=1-.2*q;sx=1+.14*q;
+   lift=Math.abs(Math.sin(tt*2.6+p.id*1.7+p.o))*1.6;rot=Math.sin(tt*2.2+p.o+p.id)*.035;
+   if(sel){lift=Math.abs(Math.sin(tt*8))*9;rot=Math.sin(tt*8)*.08}
+   if(done){lift=Math.abs(Math.sin(tt*5+p.id))*6;rot=Math.sin(tt*6+p.id)*.15}}
+  const sh=Math.max(.5,1-lift/50);g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(x,y+1,17*sc*sh,5.5*sc*sh,0,0,7);g.fill();
+  if(sel){g.strokeStyle='#ffc233';g.lineWidth=4;g.beginPath();g.ellipse(x,y+1,(22+Math.sin(tt*9)*2)*sc,8,0,0,7);g.stroke()}
+  g.save();g.translate(x,y-lift);g.rotate(rot);g.scale(p.face*sx*sc,sy*sc);sprite(p.o,0,0,46);g.restore();
+  if(N==2){g.fillStyle='#fff';g.beginPath();g.arc(x+13*sc,y-lift-3,7,0,7);g.fill();g.lineWidth=2;g.strokeStyle=PL[p.o].col;g.stroke();txt(String(p.id+1),x+13*sc,y-lift-2.5,11,'center',PL[p.o].col)}})}
+function drawDice(cx,cy,size,col){g.save();g.translate(cx,cy-dice.bounce);g.rotate(dice.rot);
+ g.fillStyle='rgba(0,0,0,.18)';g.beginPath();g.ellipse(0,size*.62+dice.bounce,size*.42,size*.1,0,0,7);g.fill();
+ g.fillStyle='#fff';rr(-size/2,-size/2,size,size,size*.2);g.fill();g.lineWidth=5;g.strokeStyle=col;g.stroke();
+ const pp={1:[[0,0]],2:[[-1,-1],[1,1]],3:[[-1,-1],[0,0],[1,1]],4:[[-1,-1],[1,-1],[-1,1],[1,1]],5:[[-1,-1],[1,-1],[0,0],[-1,1],[1,1]],6:[[-1,-1],[-1,0],[-1,1],[1,-1],[1,0],[1,1]]}[dice.val];
+ g.fillStyle='#2b1a4d';pp.forEach(([a,b])=>{g.beginPath();g.arc(a*size*.26,b*size*.26,size*.075,0,7);g.fill()});g.restore()}
+function draw(){g.clearRect(0,0,W,H);drawBoard();drawPawns();
+ const now=performance.now();fx=fx.filter(f=>now-f.t0<f.dur);fx.forEach(f=>{const t=(now-f.t0)/f.dur;g.globalAlpha=1-t*t;g.lineWidth=5;g.strokeStyle='rgba(0,0,0,.5)';g.font=`800 24px ${FONT}`;g.textAlign='center';g.textBaseline='middle';g.strokeText(f.text,f.x,f.y-t*34);g.fillStyle=f.color;g.fillText(f.text,f.x,f.y-t*34);g.globalAlpha=1})}
+cv.addEventListener('pointerdown',e=>{if(!pickRes||!hiL.length)return;const b=cv.getBoundingClientRect(),x=(e.clientX-b.left)*W/b.width,y=(e.clientY-b.top)*H/b.height;
+ let best=null,bd=30;hiL.forEach(p=>{const d=Math.hypot(p.px-x,p.py-14-y);if(d<bd){bd=d;best=p}});if(best){const r=pickRes;pickRes=null;r(best)}});
+function loop(ts){tt=ts/1000;draw();requestAnimationFrame(loop)}
+menu();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
